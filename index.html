@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Construction AI Analyzer — Zarrar & Co</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8C97A;
+    --gold-dim: rgba(201,168,76,0.12);
+    --gold-border: rgba(201,168,76,0.25);
+    --bg: #0A0A0A;
+    --surface: #141414;
+    --surface2: #1C1C1C;
+    --surface3: #242424;
+    --text: #F0EDE8;
+    --text-muted: #7A766F;
+    --text-soft: #B0ACA4;
+    --red: rgba(220,70,70,0.15);
+    --red-border: rgba(220,70,70,0.35);
+    --red-text: #F09595;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── LAYOUT ── */
+  .page { max-width: 640px; margin: 0 auto; padding: 0 1rem 4rem; }
+
+  /* ── TOP NAV ── */
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 0; border-bottom: 1px solid var(--gold-border);
+    margin-bottom: 2rem;
+    animation: fadeDown 0.5s ease both;
+  }
+  .nav-logo { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--gold); letter-spacing: 0.06em; }
+  .nav-logo small { display: block; font-size: 10px; font-weight: 400; color: var(--text-muted); letter-spacing: 0.04em; margin-top: 1px; }
+  .nav-badge { font-size: 10px; font-weight: 500; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--gold-border); border-radius: 20px; padding: 3px 10px; }
+
+  /* ── HERO ── */
+  .hero { margin-bottom: 2rem; animation: fadeUp 0.6s 0.1s ease both; }
+  .hero h1 { font-family: 'Syne', sans-serif; font-size: clamp(24px, 5vw, 32px); font-weight: 800; color: var(--text); line-height: 1.15; margin-bottom: 8px; }
+  .hero h1 em { font-style: normal; color: var(--gold); }
+  .hero p { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 480px; }
+
+  /* ── UPLOAD ── */
+  .upload-area {
+    position: relative; border: 1.5px dashed var(--gold-border);
+    border-radius: 16px; padding: 3rem 2rem; text-align: center;
+    cursor: pointer; transition: all 0.2s; background: var(--surface);
+    margin-bottom: 1.25rem;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+  .upload-area:hover, .upload-area.drag { border-color: var(--gold); background: var(--gold-dim); }
+  .upload-area input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .upload-icon-wrap { width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 14px; background: var(--gold-dim); border: 1px solid var(--gold-border); display: flex; align-items: center; justify-content: center; }
+  .upload-icon-wrap svg { width: 24px; height: 24px; stroke: var(--gold); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .upload-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 5px; }
+  .upload-sub { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+  .upload-sub b { color: var(--gold); font-weight: 500; }
+
+  /* ── PREVIEW ── */
+  .preview-wrap { display: none; position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--gold-border); margin-bottom: 1.25rem; }
+  .preview-wrap img { width: 100%; max-height: 320px; object-fit: cover; display: block; }
+  .preview-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%); pointer-events: none; }
+  .preview-chip { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.75); border: 1px solid var(--gold-border); border-radius: 8px; padding: 4px 12px; font-size: 11px; color: var(--gold); font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.05em; }
+  .preview-remove { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 5px 12px; font-size: 11px; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+  .preview-remove:hover { color: var(--red-text); border-color: var(--red-border); }
+
+  /* ── PROMPT BOX ── */
+  .prompt-section { margin-bottom: 1.25rem; animation: fadeUp 0.6s 0.3s ease both; }
+  .prompt-label { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .prompt-label span { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); display: inline-block; }
+  .prompt-textarea {
+    width: 100%; background: var(--surface); border: 1px solid var(--gold-border);
+    border-radius: 12px; padding: 14px 16px; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; color: var(--text); resize: vertical; min-height: 100px;
+    line-height: 1.6; transition: border-color 0.2s; outline: none;
+  }
+  .prompt-textarea:focus { border-color: var(--gold); }
+  .prompt-textarea::placeholder { color: var(--text-muted); }
+
+  /* ── QUICK PROMPTS ── */
+  .quick-label { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; margin-top: 10px; }
+  .quick-prompts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1.25rem; }
+  .qp { background: var(--surface2); border: 1px solid var(--surface3); border-radius: 20px; padding: 5px 12px; font-size: 11px; color: var(--text-muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .qp:hover { border-color: var(--gold-border); color: var(--gold-light); background: var(--gold-dim); }
+
+  /* ── ANALYZE BTN ── */
+  .analyze-btn {
+    width: 100%; padding: 15px; border-radius: 12px;
+    background: var(--gold); color: #0A0A0A;
+    border: none; font-family: 'Syne', sans-serif;
+    font-size: 15px; font-weight: 800; cursor: pointer;
+    transition: all 0.2s; letter-spacing: 0.03em;
+    margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 8px;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+  .analyze-btn:hover:not(:disabled) { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.25); }
+  .analyze-btn:active:not(:disabled) { transform: translateY(0); }
+  .analyze-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-arrow { font-size: 18px; transition: transform 0.2s; }
+  .analyze-btn:hover:not(:disabled) .btn-arrow { transform: translateX(4px); }
+
+  /* ── LOADING ── */
+  .loading-box { display: none; padding: 2rem; text-align: center; }
+  .loading-spinner { width: 32px; height: 32px; border: 2px solid var(--gold-border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
+  .loading-msg { font-size: 13px; color: var(--text-muted); animation: pulse 1.5s ease-in-out infinite; }
+  .loading-bar-track { height: 2px; background: var(--surface3); border-radius: 2px; margin-top: 14px; overflow: hidden; }
+  .loading-bar-fill { height: 100%; background: var(--gold); border-radius: 2px; animation: barFill 2.5s ease-in-out infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+  @keyframes barFill { 0%{width:0;margin-left:0} 60%{width:65%;margin-left:0} 100%{width:0;margin-left:100%} }
+
+  /* ── ERROR ── */
+  .error-box { display: none; background: var(--red); border: 1px solid var(--red-border); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--red-text); margin-bottom: 1rem; line-height: 1.5; }
+
+  /* ── RESULT ── */
+  .result-box { display: none; background: var(--surface); border: 1px solid var(--gold-border); border-radius: 16px; overflow: hidden; margin-bottom: 1.5rem; }
+  .result-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--gold-border); }
+  .result-head-left { display: flex; align-items: center; gap: 8px; }
+  .result-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+  .result-head-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--gold); }
+  .copy-btn { background: transparent; border: 1px solid var(--gold-border); border-radius: 6px; padding: 4px 12px; font-size: 11px; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+  .copy-btn:hover { color: var(--gold); border-color: var(--gold); }
+  .result-body { padding: 18px; font-size: 13px; line-height: 1.85; color: var(--text); }
+  .section-tag { display: inline-block; background: var(--gold-dim); color: var(--gold-light); font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 4px; letter-spacing: 0.06em; margin: 12px 0 6px; }
+
+  /* ── FOOTER ── */
+  .footer { border-top: 1px solid var(--gold-border); padding: 1.5rem 0 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .footer-credit { font-size: 11px; color: var(--text-muted); }
+  .footer-credit strong { color: var(--gold); font-weight: 600; }
+  .footer-brand { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.08em; }
+  .footer-brand em { font-style: normal; color: var(--gold); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── MOBILE ── */
+  @media (max-width: 480px) {
+    .nav-badge { display: none; }
+    .upload-area { padding: 2rem 1rem; }
+    .quick-prompts { gap: 5px; }
+    .qp { font-size: 10px; padding: 4px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-logo">
+      ZARRAR &amp; CO
+      <small>Construction Intelligence</small>
+    </div>
+    <div class="nav-badge">AI Powered</div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1>Analyze Any<br><em>Building Image</em></h1>
+    <p>Upload a photo, sketch, or AutoCAD screenshot. Add your prompt or pick a quick option — AI will deliver a full construction analysis.</p>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="upload-area" id="uploadArea">
+    <input type="file" id="fileInput" accept="image/*">
+    <div class="upload-icon-wrap">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <div class="upload-title">Drop your building image here</div>
+    <div class="upload-sub">Supports <b>JPG, PNG, WEBP</b> — photo, sketch, or screenshot</div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview-wrap" id="previewWrap">
+    <img id="previewImg" src="" alt="Building preview">
+    <div class="preview-overlay"></div>
+    <div class="preview-chip">IMAGE LOADED</div>
+    <button class="preview-remove" id="removeBtn" type="button">✕ Remove</button>
+  </div>
+
+  <!-- PROMPT -->
+  <div class="prompt-section">
+    <div class="prompt-label"><span></span>Your Prompt — Tell AI what you want</div>
+    <textarea class="prompt-textarea" id="promptInput" placeholder="e.g. Give me a complete 3D modeling guide for this building in Blender, including materials and render settings..."></textarea>
+
+    <div class="quick-label">Or pick a quick prompt:</div>
+    <div class="quick-prompts">
+      <div class="qp" onclick="setPrompt('elevation')">3D Elevation Guide</div>
+      <div class="qp" onclick="setPrompt('animation')">Construction Animation</div>
+      <div class="qp" onclick="setPrompt('materials')">Materials &amp; Textures</div>
+      <div class="qp" onclick="setPrompt('before_after')">Before &amp; After Render</div>
+      <div class="qp" onclick="setPrompt('blender')">Blender Step-by-Step</div>
+      <div class="qp" onclick="setPrompt('phases')">Construction Phases</div>
+    </div>
+  </div>
+
+  <!-- BUTTON -->
+  <button class="analyze-btn" id="analyzeBtn" disabled type="button" onclick="analyzeImage()">
+    <span>Analyze Building</span>
+    <span class="btn-arrow">→</span>
+  </button>
+
+  <!-- ERROR -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- LOADING -->
+  <div class="loading-box" id="loadingBox">
+    <div class="loading-spinner"></div>
+    <div class="loading-msg" id="loadingMsg">Analyzing structure...</div>
+    <div class="loading-bar-track"><div class="loading-bar-fill"></div></div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-box" id="resultBox">
+    <div class="result-head">
+      <div class="result-head-left">
+        <div class="result-dot"></div>
+        <div class="result-head-title">Analysis Complete</div>
+      </div>
+      <button class="copy-btn" id="copyBtn" type="button" onclick="copyResult()">Copy</button>
+    </div>
+    <div class="result-body" id="resultBody"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-credit">Designed by <strong>Asjid Rouf</strong> — for Zarrar &amp; Co</div>
+    <div class="footer-brand"><em>ZARRAR</em> &amp; CO</div>
+  </div>
+
+</div>
+
+<script>
+  let imageBase64 = null;
+  let imageMediaType = 'image/jpeg';
+
+  const quickPrompts = {
+    elevation: `Analyze this building image and give me a complete 3D elevation breakdown:
+- Building overview: type, style, dimensions, floors
+- All visible elevations (front, side, rear) with measurements
+- Step-by-step Blender modeling guide: shapes to start with, wall extrusions, window/door cutouts, roof technique
+- Camera angles for best architectural render
+- EEVEE vs Cycles recommendation with lighting setup`,
+
+    animation: `Create a full construction animation guide for this building:
+- Break down into 10-12 construction phases (site prep → foundation → structure → walls → roof → finishing)
+- For each phase: frame range, what appears, animation technique (scale, dissolve, grow)
+- Before & after sequence: empty plot to completed building
+- 3 dramatic camera paths for the animation
+- Export settings for final MP4 video from Blender`,
+
+    materials: `Analyze all materials visible in this building image:
+- Identify each material/surface (brick, concrete, glass, metal, etc.)
+- Blender Principled BSDF settings for each: Base Color hex, Roughness, Metallic, texture maps needed
+- Color palette extraction with complementary accent colors
+- Material quality grade and alternatives
+- Finishing touches: landscaping, lighting, exterior accessories`,
+
+    before_after: `Create a before & after visualization plan for this building:
+- "Before" state: empty plot/old structure description and Blender setup
+- "After" state: completed building with all materials and landscaping
+- Transition animation technique (camera move, time-lapse, split screen)
+- Day and night render variants
+- How to present this as a 30-second client presentation video`,
+
+    blender: `Give me a complete step-by-step Blender tutorial to model this exact building:
+Step 1: Project setup and reference image placement
+Step 2: Base floor plan from reference
+Step 3: Wall extrusion and floor levels
+Step 4: Roof modeling technique
+Step 5: Window and door openings
+Step 6: Materials and textures assignment
+Step 7: Lighting setup (sun, sky, ambient)
+Step 8: Camera positioning and final render settings
+Be very specific — mention exact Blender tools and shortcuts.`,
+
+    phases: `Break down the construction of this building into detailed phases:
+- Phase 1: Site preparation and excavation
+- Phase 2: Foundation work
+- Phase 3: Structural frame
+- Phase 4: External walls and envelope
+- Phase 5: Roof structure
+- Phase 6: Windows and doors
+- Phase 7: Exterior finishing
+- Phase 8: Landscaping
+For each phase describe: what happens visually, duration, key elements, how to animate it in Blender.`
+  };
+
+  function setPrompt(key) {
+    document.getElementById('promptInput').value = quickPrompts[key];
+    document.getElementById('promptInput').focus();
+  }
+
+  // File input
+  document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) handleFile(file);
+  });
+
+  // Drag & drop
+  const uploadArea = document.getElementById('uploadArea');
+  uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag'); });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag'));
+  uploadArea.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadArea.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) handleFile(file);
+  });
+
+  // Remove image
+  document.getElementById('removeBtn').addEventListener('click', function() {
+    imageBase64 = null;
+    document.getElementById('previewWrap').style.display = 'none';
+    document.getElementById('uploadArea').style.display = 'block';
+    document.getElementById('analyzeBtn').disabled = true;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('resultBox').style.display = 'none';
+    document.getElementById('errorBox').style.display = 'none';
+  });
+
+  function handleFile(file) {
+    imageMediaType = file.type || 'image/jpeg';
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      imageBase64 = e.target.result.split(',')[1];
+      document.getElementById('previewImg').src = e.target.result;
+      document.getElementById('previewWrap').style.display = 'block';
+      document.getElementById('uploadArea').style.display = 'none';
+      document.getElementById('analyzeBtn').disabled = false;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  const loadingMsgs = [
+    'Scanning building structure...',
+    'Identifying architectural elements...',
+    'Generating 3D analysis...',
+    'Preparing construction guide...',
+    'Almost ready...'
+  ];
+
+  async function analyzeImage() {
+    if (!imageBase64) return;
+
+    const prompt = document.getElementById('promptInput').value.trim() ||
+      'Analyze this building image. Give me a complete 3D construction guide including: building overview, elevation breakdown, Blender modeling steps, materials with shader settings, and render recommendations.';
+
+    const btn = document.getElementById('analyzeBtn');
+    const loadingBox = document.getElementById('loadingBox');
+    const resultBox = document.getElementById('resultBox');
+    const errorBox = document.getElementById('errorBox');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span>Analyzing...</span>';
+    errorBox.style.display = 'none';
+    resultBox.style.display = 'none';
+    loadingBox.style.display = 'block';
+
+    let msgIdx = 0;
+    const msgEl = document.getElementById('loadingMsg');
+    const msgTimer = setInterval(() => {
+      msgIdx = (msgIdx + 1) % loadingMsgs.length;
+      msgEl.textContent = loadingMsgs[msgIdx];
+    }, 2200);
+
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64,
+          imageMediaType,
+          prompt
+        })
+      });
+
+      clearInterval(msgTimer);
+      loadingBox.style.display = 'none';
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error?.message || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      const text = data.text || data.content?.find(b => b.type === 'text')?.text || 'No response received.';
+
+      const formatted = text
+        .replace(/\[([^\]]+)\]/g, '<span class="section-tag">$1</span>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+
+      document.getElementById('resultBody').innerHTML = formatted;
+      resultBox.style.display = 'block';
+      resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>Analyze Again</span><span class="btn-arrow">→</span>';
+
+    } catch (err) {
+      clearInterval(msgTimer);
+      loadingBox.style.display = 'none';
+      errorBox.style.display = 'block';
+      errorBox.textContent = 'Error: ' + err.message + '. Make sure you are using this via Claude.ai or a valid API session.';
+      btn.disabled = false;
+      btn.innerHTML = '<span>Try Again</span><span class="btn-arrow">→</span>';
+    }
+  }
+
+  function copyResult() {
+    const text = document.getElementById('resultBody').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = 'Copied ✓';
+      setTimeout(() => btn.textContent = 'Copy', 2000);
+    });
+  }
+</script>
+</body>
+</html>
