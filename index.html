@@ -383,13 +383,22 @@ For each phase describe: what happens visually, duration, key elements, how to a
     }, 2200);
 
     try {
-      const res = await fetch('/api/analyze', {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
         body: JSON.stringify({
-          imageBase64,
-          imageMediaType,
-          prompt
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1500,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: imageMediaType, data: imageBase64 } },
+              { type: 'text', text: prompt }
+            ]
+          }]
         })
       });
 
@@ -402,7 +411,7 @@ For each phase describe: what happens visually, duration, key elements, how to a
       }
 
       const data = await res.json();
-      const text = data.text || data.content?.find(b => b.type === 'text')?.text || 'No response received.';
+      const text = data.content?.find(b => b.type === 'text')?.text || 'No response received.';
 
       const formatted = text
         .replace(/\[([^\]]+)\]/g, '<span class="section-tag">$1</span>')
@@ -420,7 +429,7 @@ For each phase describe: what happens visually, duration, key elements, how to a
       clearInterval(msgTimer);
       loadingBox.style.display = 'none';
       errorBox.style.display = 'block';
-      errorBox.textContent = 'Error: ' + err.message + '. Make sure you are using this via Claude.ai or a valid API session.';
+      errorBox.textContent = 'Error: ' + err.message;
       btn.disabled = false;
       btn.innerHTML = '<span>Try Again</span><span class="btn-arrow">→</span>';
     }
