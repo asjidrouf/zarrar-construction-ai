@@ -1,10 +1,5 @@
 {
   "version": 2,
-  "functions": {
-    "analyze.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "routes": [
     { "src": "/api/analyze", "dest": "/analyze.js" },
     { "src": "/(.*)", "dest": "/index.html" }
